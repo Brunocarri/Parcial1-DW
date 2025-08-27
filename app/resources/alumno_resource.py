@@ -2,7 +2,7 @@ from flask import jsonify, Blueprint, request
 from app.mapping.alumno_mapping import AlumnoMapping
 from app.services.alumno_service import AlumnoService
 
-alumno_bp = Blueprint('alumno', __name__)
+alumno_bp = Blueprint('alumno', _name_)
 alumno_mapping = AlumnoMapping()
 
 @alumno_bp.route('/alumno', methods=['GET'])
@@ -31,3 +31,21 @@ def actualizar(id):
 def borrar_por_id(id):
     AlumnoService.borrar_por_id(id)
     return jsonify("Alumno borrado exitosamente"), 200
+
+@alumno_bp.route('/alumno/<int:id>/ficha', methods=['GET'])
+def ficha_alumno(id):
+    formato = request.args.get("formato", "json")  # ?formato=json o ?formato=pdf
+    ficha = AlumnoService.generar_ficha_alumno(id, formato)
+    if not ficha:
+        return jsonify({"error": "Alumno no encontrado o formato inválido"}), 404
+
+    if formato == "json":
+        return ficha, 200
+    elif formato == "pdf":
+        from flask import send_file
+        return send_file(
+            ficha,
+            as_attachment=True,
+            download_name=f"ficha_alumno_{id}.pdf",
+            mimetype="application/pdf"
+        )

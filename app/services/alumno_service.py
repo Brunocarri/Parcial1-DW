@@ -2,6 +2,7 @@ import datetime
 from io import BytesIO
 from app.models import Alumno
 from app.repositories.interfaces.alumno_repository_interface import AlumnoRepositoryInterface
+from app.services.ficha_alumno_service import FichaAlumnoService
 
 class AlumnoService:
     def __init__(self, alumno_repository: AlumnoRepositoryInterface):
@@ -83,3 +84,15 @@ class AlumnoService:
             "universidad": universidad,
             "fecha": AlumnoService.__obtener_fecha_actual()
         }
+    
+from app.services.ficha_alumno_service import FichaAlumnoService
+
+    def generar_ficha_alumno(self, id: int, formato: str):
+        alumno = self.alumno_repository.get_by_id(id)
+        if not alumno:
+            return None
+        if formato == "json":
+            return FichaAlumnoService.generar_ficha_json(alumno)
+        elif formato == "pdf":
+            return FichaAlumnoService.generar_ficha_pdf(alumno)
+        return None
