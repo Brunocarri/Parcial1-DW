@@ -1,25 +1,23 @@
 import datetime
 from io import BytesIO
 from app.models import Alumno
-from app.repositories import AlumnoRepository
+from app.repositories.interfaces.alumno_repository_interface import AlumnoRepositoryInterface
 
 class AlumnoService:
+    def __init__(self, alumno_repository: AlumnoRepositoryInterface):
+        self.alumno_repository = alumno_repository
 
-    @staticmethod
-    def crear(alumno):
-        AlumnoRepository.crear(alumno)
+    def crear(self, alumno):
+        self.alumno_repository.crear(alumno)
 
-    @staticmethod
-    def buscar_por_id(id: int) -> Alumno:        
-        return AlumnoRepository.buscar_por_id(id)
+    def buscar_por_id(self, id: int) -> Alumno:
+        return self.alumno_repository.get_by_id(id)
 
-    @staticmethod
-    def buscar_todos() -> list[Alumno]:
-        return AlumnoRepository.buscar_todos()
-    
-    @staticmethod
-    def actualizar(id: int, alumno: Alumno) -> Alumno:
-        alumno_existente = AlumnoRepository.buscar_por_id(id)
+    def buscar_todos(self) -> list[Alumno]:
+        return self.alumno_repository.buscar_todos()
+
+    def actualizar(self, id: int, alumno: Alumno) -> Alumno:
+        alumno_existente = self.alumno_repository.get_by_id(id)
         if not alumno_existente:
             return None
         alumno_existente.nombre = alumno.nombre
@@ -31,20 +29,16 @@ class AlumnoService:
         alumno_existente.nro_legajo = alumno.nro_legajo
         alumno_existente.fecha_ingreso = alumno.fecha_ingreso
         return alumno_existente
-        
-    @staticmethod
-    def borrar_por_id(id: int) -> bool:
-        return AlumnoRepository.borrar_por_id(id)
-    
-    @staticmethod
-    def generar_certificado_alumno_regular(id: int, tipo: str) -> BytesIO:
-        # Importación local para evitar error de dependencias en tests
+
+    def borrar_por_id(self, id: int) -> bool:
+        return self.alumno_repository.borrar_por_id(id)
+
+    def generar_certificado_alumno_regular(self, id: int, tipo: str) -> BytesIO:
         from app.services.documentos_office_service import obtener_tipo_documento
-        alumno = AlumnoRepository.buscar_por_id(id)
+        alumno = self.alumno_repository.get_by_id(id)
         if not alumno:
             return None
-        # Para compatibilidad con tests: si el alumno no tiene relaciones, usar mocks
-        context = AlumnoService.__obtener_alumno_compat(alumno)
+        context = self.__obtener_alumno_compat(alumno)
         documento = obtener_tipo_documento(tipo)
         if not documento:
             return None
@@ -62,11 +56,9 @@ class AlumnoService:
 
     @staticmethod
     def __obtener_alumno_compat(alumno: Alumno) -> dict:
-        # Si el alumno tiene especialidad/facultad/universidad, usarlas
         especialidad = getattr(alumno, 'especialidad', None)
         facultad = getattr(especialidad, 'facultad', None) if especialidad else None
         universidad = getattr(facultad, 'universidad', None) if facultad else None
-        # Si no existen, crear mocks para los tests
         if not especialidad:
             class MockEspecialidad:
                 nombre = "Test Especialidad"
